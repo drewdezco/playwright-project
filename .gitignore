@@ -80,3 +80,5 @@ tmp/
 temp/
 *.tmp
 
+# learning guide
+LEARNING_GUIDE.md
