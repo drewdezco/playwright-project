@@ -64,7 +64,8 @@ playwright-cypress/
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.9, 3.10, or 3.11 (recommended)
+  - **Note**: Python 3.12+ may have compatibility issues with some packages. Python 3.11 is recommended for best compatibility.
 - pip (Python package manager)
 - Git
 
@@ -380,6 +381,14 @@ playwright install
 **Issue**: Import errors
 ```bash
 # Solution: Ensure virtual environment is activated and dependencies installed
+pip install -r requirements.txt
+```
+
+**Issue**: Build errors with Python 3.12+ (greenlet, etc.)
+```bash
+# Solution: Use Python 3.11 or earlier for best compatibility
+# Or try upgrading pip and setuptools first:
+pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 

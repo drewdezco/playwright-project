@@ -1,18 +1,18 @@
 # Core Playwright and Testing
-playwright==1.40.0
-pytest==7.4.3
-pytest-playwright==0.4.3
-pytest-html==4.1.1
-pytest-xdist==3.5.0
+playwright>=1.40.0
+pytest>=7.4.3
+pytest-playwright>=0.4.3
+pytest-html>=4.1.1
+pytest-xdist>=3.5.0
 
 # HTTP Libraries for API Testing
-requests==2.31.0
-httpx==0.25.2
+# Note: Using Playwright's APIRequestContext for API testing, requests is optional
+requests>=2.31.0
 
 # Test Data and Utilities
-faker==20.1.0
-python-dotenv==1.0.0
+faker>=20.1.0
+python-dotenv>=1.0.0
 
 # Reporting and Monitoring
-pytest-json-report==1.5.0
+pytest-json-report>=1.5.0
 
