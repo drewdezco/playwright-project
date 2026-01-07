@@ -84,13 +84,13 @@ def authenticated_api_context(playwright: Playwright) -> Generator[APIRequestCon
     api_context.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def base_url() -> str:
     """Base URL for tests."""
     return os.getenv("BASE_URL", "https://playwright.dev")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def api_base_url() -> str:
     """Base URL for API tests."""
     return os.getenv("API_BASE_URL", "https://jsonplaceholder.typicode.com")
