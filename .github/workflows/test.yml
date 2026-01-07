@@ -1,0 +1,101 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run API tests
+      run: |
+        pytest tests/api/ -v --html=reports/api-report.html --self-contained-html
+      continue-on-error: false
+    
+    - name: Run E2E tests
+      run: |
+        pytest tests/e2e/ -v --html=reports/e2e-report.html --self-contained-html
+      continue-on-error: false
+    
+    - name: Run Integration tests
+      run: |
+        pytest tests/integration/ -v --html=reports/integration-report.html --self-contained-html
+      continue-on-error: false
+    
+    - name: Upload test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-reports-${{ matrix.python-version }}
+        path: |
+          reports/*.html
+          test-results/
+        retention-days: 30
+    
+    - name: Upload screenshots
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: screenshots-${{ matrix.python-version }}
+        path: screenshots/
+        retention-days: 7
+
+  test-parallel:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run tests in parallel
+      run: |
+        pytest tests/ -v -n auto --html=reports/parallel-report.html --self-contained-html
+      continue-on-error: false
+    
+    - name: Upload parallel test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: parallel-test-reports
+        path: |
+          reports/*.html
+          test-results/
+        retention-days: 30
+

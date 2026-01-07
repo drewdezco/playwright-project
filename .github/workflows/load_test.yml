@@ -1,0 +1,106 @@
+name: Load Testing
+
+on:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      num_requests:
+        description: 'Number of requests to generate'
+        required: false
+        default: '100'
+      duration:
+        description: 'Duration in seconds'
+        required: false
+        default: '60'
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run load tests
+      run: |
+        pytest tests/load/ -v -m load --html=reports/load-report.html --self-contained-html
+      env:
+        NUM_REQUESTS: ${{ github.event.inputs.num_requests || '100' }}
+        DURATION: ${{ github.event.inputs.duration || '60' }}
+      continue-on-error: true
+    
+    - name: Generate load test metrics
+      run: |
+        echo "## Load Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "Load tests completed. Check artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload load test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: load-test-reports
+        path: |
+          reports/load-report.html
+          test-results/
+        retention-days: 90
+    
+    - name: Upload performance metrics
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-metrics
+        path: |
+          reports/*.json
+        retention-days: 90
+
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run performance tests
+      run: |
+        pytest tests/api/test_api_performance.py -v --html=reports/performance-report.html --self-contained-html
+      continue-on-error: true
+    
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-reports
+        path: |
+          reports/performance-report.html
+        retention-days: 90
+

@@ -1,0 +1,139 @@
+name: Chaos Engineering Tests
+
+on:
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      failure_rate:
+        description: 'Failure injection rate (0.0 to 1.0)'
+        required: false
+        default: '0.1'
+
+jobs:
+  chaos-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run chaos engineering tests
+      run: |
+        pytest tests/chaos/ -v -m chaos --html=reports/chaos-report.html --self-contained-html
+      env:
+        CHAOS_FAILURE_RATE: ${{ github.event.inputs.failure_rate || '0.1' }}
+      continue-on-error: true
+    
+    - name: Generate chaos test summary
+      run: |
+        echo "## Chaos Engineering Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "Chaos tests completed. Check artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Failure rate: ${{ github.event.inputs.failure_rate || '0.1' }}" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload chaos test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: chaos-test-reports
+        path: |
+          reports/chaos-report.html
+          test-results/
+        retention-days: 90
+    
+    - name: Upload failure logs
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: failure-logs
+        path: |
+          *.log
+        retention-days: 30
+
+  recovery-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run recovery procedure tests
+      run: |
+        pytest tests/chaos/test_recovery_procedures.py -v --html=reports/recovery-report.html --self-contained-html
+      continue-on-error: true
+    
+    - name: Upload recovery test reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: recovery-test-reports
+        path: |
+          reports/recovery-report.html
+        retention-days: 90
+
+  resilience-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Playwright browsers
+      run: playwright install --with-deps
+    
+    - name: Run resilience tests
+      run: |
+        pytest tests/api/test_api_resilience.py tests/chaos/ -v --html=reports/resilience-report.html --self-contained-html
+      continue-on-error: true
+    
+    - name: Upload resilience test reports
+      uses: actions/upload-artifact@v3
+      if:
+        always()
+      with:
+        name: resilience-test-reports
+        path: |
+          reports/resilience-report.html
+        retention-days: 90
+
