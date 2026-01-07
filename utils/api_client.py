@@ -79,12 +79,20 @@ class APIClient:
             try:
                 self._log_request(method, url, **kwargs)
                 
-                response = self.api_context.request(
-                    method=method,
-                    url=url,
-                    timeout=self.timeout,
-                    **kwargs
-                )
+                # Call the appropriate method based on HTTP method
+                method_upper = method.upper()
+                if method_upper == "GET":
+                    response = self.api_context.get(url, timeout=self.timeout, **kwargs)
+                elif method_upper == "POST":
+                    response = self.api_context.post(url, timeout=self.timeout, **kwargs)
+                elif method_upper == "PUT":
+                    response = self.api_context.put(url, timeout=self.timeout, **kwargs)
+                elif method_upper == "PATCH":
+                    response = self.api_context.patch(url, timeout=self.timeout, **kwargs)
+                elif method_upper == "DELETE":
+                    response = self.api_context.delete(url, timeout=self.timeout, **kwargs)
+                else:
+                    raise ValueError(f"Unsupported HTTP method: {method}")
                 
                 self._log_response(response)
                 

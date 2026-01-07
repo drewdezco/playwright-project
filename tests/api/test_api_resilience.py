@@ -100,18 +100,16 @@ class TestErrorHandling:
         # Should not retry on 4xx errors
         assert response.status < 500
     
-    def test_handle_5xx_errors(self, api_request_context: APIRequestContext):
+    def test_handle_5xx_errors(self, playwright):
         """Test handling 5xx server errors."""
         # Using httpbin.org to simulate server errors
-        from playwright.sync_api import sync_playwright
+        api_context = playwright.request.new_context(base_url="https://httpbin.org")
         
-        with sync_playwright() as p:
-            api_context = p.request.new_context()
-            
+        try:
             # httpbin.org/status/500
-            response = api_context.get("https://httpbin.org/status/500")
+            response = api_context.get("/status/500")
             assert response.status == 500
-            
+        finally:
             api_context.dispose()
     
     def test_error_response_parsing(self, api_request_context: APIRequestContext):

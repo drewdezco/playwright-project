@@ -15,23 +15,21 @@ class TestSlowResponses:
     
     def test_slow_response_simulation(self, api_request_context: APIRequestContext):
         """Test handling slow responses."""
-        chaos = ChaosMonkey(failure_rate=0.0)
+        chaos = ChaosMonkey(failure_rate=1.0)  # Always inject failure
         
-        def make_slow_request():
-            # Inject slow response
-            chaos.inject_failure(
-                lambda: api_request_context.get("/posts/1"),
-                failure_type=FailureType.SLOW_RESPONSE,
-                delay=1.0
-            )
+        def make_request():
+            return api_request_context.get("/posts/1")
         
+        # Manually inject slow response with delay
         start_time = time.time()
-        make_slow_request()
+        chaos.simulate_slow_response(delay=1.0)
+        result = make_request()
         end_time = time.time()
         
         response_time = end_time - start_time
         # Response should be slow due to injected delay
         assert response_time >= 1.0
+        assert result.status == 200
     
     def test_timeout_on_slow_response(self, api_request_context: APIRequestContext):
         """Test timeout handling for slow responses."""

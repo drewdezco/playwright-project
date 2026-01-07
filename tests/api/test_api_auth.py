@@ -34,23 +34,22 @@ class TestAPIAuthentication:
         
         assert response.status == 200
     
-    def test_basic_auth(self, api_request_context: APIRequestContext):
+    def test_basic_auth(self, playwright):
         """Test Basic authentication."""
         # Using httpbin.org for actual auth testing
-        from playwright.sync_api import sync_playwright
+        api_context = playwright.request.new_context(
+            base_url="https://httpbin.org",
+            http_credentials={
+                "username": "user",
+                "password": "pass"
+            }
+        )
         
-        with sync_playwright() as p:
-            api_context = p.request.new_context(
-                http_credentials={
-                    "username": "user",
-                    "password": "pass"
-                }
-            )
-            
+        try:
             # httpbin.org/basic-auth/user/pass
-            response = api_context.get("https://httpbin.org/basic-auth/user/pass")
+            response = api_context.get("/basic-auth/user/pass")
             assert response.status == 200
-            
+        finally:
             api_context.dispose()
     
     def test_custom_auth_header(self, api_request_context: APIRequestContext):
@@ -162,22 +161,21 @@ class TestAPIClientAuth:
         data = response.json()
         assert "id" in data
     
-    def test_client_with_custom_auth(self, api_request_context: APIRequestContext):
+    def test_client_with_custom_auth(self, playwright):
         """Test API client with custom authentication."""
         # Create context with custom auth
-        from playwright.sync_api import sync_playwright
+        auth_context = playwright.request.new_context(
+            base_url="https://jsonplaceholder.typicode.com",
+            extra_http_headers={
+                "X-API-Key": "custom-key",
+                "Authorization": "Bearer custom-token"
+            }
+        )
         
-        with sync_playwright() as p:
-            auth_context = p.request.new_context(
-                extra_http_headers={
-                    "X-API-Key": "custom-key",
-                    "Authorization": "Bearer custom-token"
-                }
-            )
-            
+        try:
             client = APIClient(auth_context)
             response = client.get("/posts/1")
             client.assert_status(response, 200)
-            
+        finally:
             auth_context.dispose()
 
